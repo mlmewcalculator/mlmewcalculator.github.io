@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>MEW Depression Estimator</title> 
+    <meta name="description"
+        content="An online calculator for users to calculate if someone would see improvement in managing depression when enrolled into epilepsy self-management programs.">
+    <meta name="author" content="ECoGLab">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="res/favicon.ico">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
+        integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+
+    <style>
+        main {
+            padding-bottom: 60px;
+        }
+
+        footer {
+            background-color: linen;
+            position: fixed;
+            height: 60px;
+            bottom: 0;
+            width: 100%;
+            transition: all 0.25s ease-in-out;
+        }
+
+        .expandFooter {
+            height: calc(100vh - 60px);
+        }
+
+        #expandedView {
+            transition: all 0.25s ease-in-out;
+            opacity: 0;
+            max-height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        #expandedView.expanded {
+            opacity: 1;
+        }
+
+        .bg-light-diff {
+            background-color: #f5f6f7
+        }
+
+        @media (max-width: 991.98px) {
+            main {
+                padding-bottom: 130px;
+            }
+
+            footer {
+                height: 130px;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- NAV BAR -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light-diff">
+        <div class="container px-5">
+        <a class="navbar-brand" href="#">
+            <img src="res/MLMEWIcon.png" width="auto" height="30" alt="Icon of calculator" class="mx-2">
+            MEW Depression Estimator
+        </a>
+        </div>
+    </nav>
+
+    <!-- FORM -->
+    <main>
+        <div class="container py-5 px-5">
+            <div class="row">
+                <div class="col-md-10 mx-auto">
+                    <div class="mb-5">
+                        <h5>Background</h5>
+                        <hr/>
+                        <p>
+                            Welcome to the MEW Machine Learning Project's online depression estimator. 
+                            This is a web interface to our best machine learning model that predicts if 
+                            epilepsy self-management intervention can improve one's depression rating. 
+                            Please type in the required demographic and clinical variables in order to 
+                            see a prediction and it's strength at the bottom of the window. The model will 
+                            predict either "<b style="color: #FF0052">Improvement</b>" (i.e. clinically 
+                            signficant improvement in depression) or "<b style="color: #008DF3">No Improvement</b>", 
+                            along with it's percentile compared to other data points of the same prediction.
+                        </p>
+                    </div>
+                    <form>
+                        <h5>Input Variables</h4>
+                        <hr/>
+                        <div class="form-group row">
+                            <div class="col-md-6">
+                                <label for="age_form">Age</label>
+                                <input type="number" step="1" min="19" max="70" class="form-control" id="age_form"
+                                    placeholder="i.e. 46" onfocusout="clampAgeInput()">
+                            </div>
+                            <div class="col-md-6 mt-3 mt-md-0">
+                                <label for="gender_form">Gender</label>
+                                <select class="form-control" id="gender_form" oninput="getPrediction()">
+                                    <option disabled selected value> -- select an option -- </option>
+                                    <option value="0">Male</option>
+                                    <option value="1">Female</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-6">
+                                <label for="race_form">Race</label>
+                                <select class="form-control" id="race_form" oninput="getPrediction()">
+                                    <option disabled selected value> -- select an option -- </option>
+                                    <option value="1">White</option>
+                                    <option value="2">Black/African-American</option>
+                                    <option value="3">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mt-3 mt-md-0">
+                                <label for="education_form">Education</label>
+                                <select class="form-control" id="education_form" oninput="getPrediction()">
+                                    <option disabled selected value> -- select an option -- </option>
+                                    <option value="1">At most high school</option>
+                                    <option value="2">At least some college</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-6">
+                                <label for="ethnicity_form">Ethnicity</label>
+                                <select class="form-control" id="ethnicity_form" oninput="getPrediction()">
+                                    <option disabled selected value> -- select an option -- </option>
+                                    <option value="0">Not Hispanic or Latino</option>
+                                    <option value="1">Hispanic or Latino</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mt-3 mt-md-0">
+                                <label for="phq9_form">PHQ9 Score Category</label>
+                                <select class="form-control" id="phq9_form" oninput="getPrediction()">
+                                    <option disabled selected value> -- select an option -- </option>
+                                    <option value="1">Minimal Depression (0-4)</option>
+                                    <option value="2">Mild Depression (5-9)</option>
+                                    <option value="3">Moderate Depression (10-14)</option>
+                                    <option value="4">Moderately Severe Depression (15-19)</option>
+                                    <option value="5">Severe Depression (20-27)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-4">
+                                <label for="qolie10_form">QOLIE-10 score</label>
+                                <input type="number" step="0.1" min="1.0" max="5.0" class="form-control"
+                                    id="qolie10_form" placeholder="2.0" onfocusout="clampQOLIEInput()">
+                            </div>
+                            <div class="col-md-8 mt-3 mt-md-0">
+                                <label for="study_form">What best describes your study's focus?</label>
+                                <select class="form-control" id="study_form" oninput="getPrediction()">
+                                    <option disabled selected value> -- select an option -- </option>
+                                    <option value="1">Improving epilepsy outcome and mood (i.e. TIME)</option>
+                                    <option value="2">Improving medical and psychosocial management (i.e. PACES)
+                                    </option>
+                                    <option value="4">Improving seizure, stress, and life-style management (i.e. SMART)
+                                    </option>
+                                    <option disabled value="3">Other (coming soon)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- COLLAPSIBLE FOOTER -->
+    <footer id="expandableFooter" class="bg-light-diff">
+        <div class="container px-5">
+            <div class="row mt-3 px-md-5">
+                <div class="col-lg-5">
+                    <div class="row">
+                        <h4>Prediction: </h4>
+                        <h4 id="pred_output" class="ml-2">...</h4>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="row">
+                        <h4>Percentile: </h4>
+                        <h4 id="dist_output" class="ml-2">...</h4>
+                    </div>
+                </div>
+                <div class="col-lg-2">
+                    <div class="row">
+                        <button id="expandBtn" type="button" class="btn-sm btn-primary" style="opacity: 0;"
+                            onclick="toggleFooterView()">See More</button>
+                    </div>
+                </div>
+            </div>
+            <hr id="predictionDetailSplit"/>
+
+            <div id="expandedView" class="mt-5 px-md-5" style="height: 300px;">
+                <h5>Prediction Strength and Percentile</h5>
+                <hr />
+                <div class="row px-2">
+                    <div class="col-lg-4">
+                        <!-- <p>
+                            This plot utilizes the SHAP library's ability to show how the model determines it's
+                            prediction based on provided feature values. Note: this is based on calculated SHAPLEY
+                            values which is a good estimate but not an exact measure of the model's trained logic.
+                        </p> -->
+                        <p id="expandedViewText">
+                            Percentile is calculated by finding how the prediction compares to the other data points used to train the model. 
+                            The larger the prediction strength, the more the prediction belongs to the predicted class. Here, the model predicts 
+                            a patient with the given input data would see a clinically signficant decrease in PHQ9 score if enrolled in epilepsy
+                            self-management intervention. The model prediction is stronger than 87% of the other predictions of this class.
+                        </p>
+                    </div>
+                    <div class="col-lg-8 mx-auto">
+                        <img id="shapPlotLoading" class="img-fluid rounded"
+                            src="https://upload.wikimedia.org/wikipedia/commons/2/29/Loader.gif" />
+                        <img id="shapPlotImg" class="img-fluid rounded p-2" style="display: none;" />
+                    </div>
+                </div>
+            </div>
+    </footer>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns"
+        crossorigin="anonymous"></script>
+    <script>
+
+        // Variables to keep track of current page's state
+        var fieldsFilledForFirstTime = false;
+        var footerExpanded = false;
+        var loadedPlot = false;
+
+        // Counter step listeners
+        $("#age_form").bind('mouseup', function () { onStepEvent("#age_form") });
+        $("#age_form").bind('keyup', function () { onStepEvent("#age_form") });
+        $("#qolie10_form").bind('mouseup', function () { onStepEvent("#qolie10_form") });
+        $("#qolie10_form").bind('keyup', function () { onStepEvent("#qolie10_form") });
+
+        // Resize listerner to keep track of the height of expandable footer
+        const footerResizeObserver = new ResizeObserver(function (entries) {
+            let expandedView = $("#expandedView");
+            let distanceFromBottom = window.innerHeight - expandedView[0].getBoundingClientRect().top;
+            distanceFromBottom = Math.max(300, distanceFromBottom);
+            expandedView.css("height", `${distanceFromBottom}px`);
+            // console.log(distanceFromBottom);
+        });
+        footerResizeObserver.observe($("#expandableFooter")[0]);
+
+        /**
+         * A separate event for numeric input fields where counter buttons are
+         * clicked for incrementing and decrementing
+         * Source: https://stackoverflow.com/questions/21662352/how-do-i-listen-for-step-up-event-for-input-type-
+         * @parameter {string} idStr -- String of the id
+         */
+        function onStepEvent(idStr) {
+            if ($(idStr).val() == undefined || $(idStr).val() == "")
+                return; /* Exit dont bother with handling this later, if its not needed leave. */
+
+            /* Important Check against integers and not strings. */
+            /* Comparing against arrays will give unexecpted behavior, size is different then the value. */
+            let newVal = parseInt($(idStr).val());
+            let oldVal = parseInt($(idStr).data('old-value'));
+
+            if (oldVal == newVal)
+                return;
+
+            getPrediction();
+        }
+
+        /**
+         * Function to listen to age field. Clamps range manually when updated and calls prediction.
+         */
+        function clampAgeInput() {
+            let age = $("#age_form").val();
+            $("#age_form").val(Math.min(70, Math.max(19, Math.round(age))));
+            getPrediction();
+        }
+
+        /**
+         * Function to listen to QOLIE10 field. Clamps range manually when updated and calls prediction.
+         */
+        function clampQOLIEInput() {
+            let qolie10 = $("#qolie10_form").val();
+            $("#qolie10_form").val(Math.min(5.0, Math.max(1, qolie10)));
+            getPrediction();
+        }
+
+        /**
+         * Check if entire form is filled. If so, return all input data that's ready to submit.
+         * @return {string} [Form data]
+         */
+        function validateAllInputs() {
+            let formData = {
+                Age: $("#age_form").val(),
+                Gender: $("#gender_form").val(),
+                Race: $("#race_form").val(),
+                Education: $("#education_form").val(),
+                Ethnicity: $("#ethnicity_form").val(),
+                PHQClass: $("#phq9_form").val(),
+                QOLIE10: $("#qolie10_form").val(),
+                InterventionType: $("#study_form").val()
+            };
+
+            const allFieldFilled = !Object.values(formData).some(x => (x == null || x == ''));
+            return allFieldFilled ? formData : null;
+        }
+
+        /**
+         * Returns all input data texts ready to submit.
+         * @return {string} [Form text data]
+         */
+        function getTextInputs() {
+            let textData = {
+                Age_cat: $("#age_form").val(),
+                Gender_cat: $("#gender_form option:selected").text(),
+                Race_cat: $("#race_form option:selected").text(),
+                Education_cat: $("#education_form option:selected").text(),
+                Ethnicity_cat: $("#ethnicity_form option:selected").text(),
+                PHQClass_cat: $("#phq9_form option:selected").text(),
+                QOLIE10_cat: $("#qolie10_form").val(),
+                InterventionType_cat: $("#study_form option:selected").text()
+            };
+
+            return textData;
+        }
+
+        /**
+         * Called upon by all form fields when updated respectively. Will get model prediction from server 
+         * when all fields are filled.
+         */
+        function getPrediction() {
+            formData = validateAllInputs();
+            if (formData) {
+                // Since new prediction is being called for, previously plot no longer
+                // needed.
+                loadedPlot = false;
+                $("#shapPlotLoading").show();
+                $("#shapPlotImg").hide();
+
+                // Show the button "Show more" button
+                $("#expandBtn").css("opacity", 1);
+
+
+                $.post("https://www.edwardeddyed.me/mlmewmodel/predict", formData)
+                    .done((res) => {
+                        console.log(res);
+                        let pred = res.data.prediction;
+                        let dist = res.data.distance;
+                        let perc = res.data.percentile;
+                        let ordi = res.data.ordinal;
+
+                        let predColor = pred == 1 ? "#FF0052" : "#008DF3";
+                        // let distAbs = Math.min(1, Math.abs(dist));
+                        let distAbs = 1;
+                        var distColor = pred == 1 ? lerpColor("#A027A6", "#FF0052", distAbs) : lerpColor("#A027A6", "#008DF3", distAbs);
+
+                        $("#pred_output").html(pred == 1 ? "Improvement" : "No Improvement");
+                        $("#pred_output").css("color", predColor);
+
+                        // $("#dist_output").html(dist.toFixed(4));
+                        $("#dist_output").html(ordi);
+                        $("#dist_output").css("color", distColor);
+
+                        let textPred = pred == 0 ? "not " : "";
+                        let template = `Percentile is calculated by determining how the prediction compares to the other data points used to train the model. 
+                            The larger the prediction strength, the more the prediction belongs to the predicted class. Here, the model predicts 
+                            a patient with the given input data would <b style="color: ${predColor}"><i>${textPred}</i>see a clinically significant decrease in PHQ9 score</b> if enrolled in epilepsy 
+                            self-management intervention (i.e. class = <b style="color: ${predColor}">${pred}</b>). The model prediction is stronger than <b style="color: ${predColor}">${perc}%</b> of the 
+                            other predictions of this class.`
+                        $("#expandedViewText").html(template);
+                });
+            }
+        }
+
+        /**
+         * Called upon when footer expand is clicked on. Will get model plots from server 
+         * when all fields are filled.
+         */
+        function getPlots() {
+            // A state check to see if it's necessary to call for plot
+            if (loadedPlot)
+                return;
+            loadedPlot = true;      // Keep track that a plot is expected
+
+            formData = validateAllInputs();
+            if (formData) {
+                let dataPacket = Object.assign(formData, getTextInputs());
+
+                console.log(dataPacket);
+
+                $.post("https://www.edwardeddyed.me/mlmewmodel/plots", dataPacket)
+                    .done((res) => {
+                        console.log(res);
+                        $("#shapPlotLoading").hide();
+                        $("#shapPlotImg").show();
+
+                        let plot_url = res.data.plot_url;
+                        $("#shapPlotImg").attr('src', `data:image/png;base64, ${plot_url}`);
+                    });
+            }
+        }
+
+        /**
+         * Called when "See More" button is clicked on. Will toggle footer view expansion
+         * and render plots.
+         */
+        function toggleFooterView() {
+            if (footerExpanded) {
+                footerExpanded = !footerExpanded;
+                $("#expandableFooter").removeClass("expandFooter");
+                $("#expandedView").removeClass("expanded");
+                $("#expandBtn").html("See More");
+            }
+            else {
+                footerExpanded = !footerExpanded;
+                $("#expandableFooter").addClass("expandFooter");
+                $("#expandedView").addClass("expanded");
+                $("#expandBtn").html("See Less");
+
+                getPlots();
+            }
+        }
+
+        /**
+         * A linear interpolator for hexadecimal colors
+         * @param {String} a
+         * @param {String} b
+         * @param {Number} amount
+         * @example
+         * // returns #7F7F7F
+         * lerpColor('#000000', '#ffffff', 0.5)
+         * @returns {String}
+         */
+        function lerpColor(a, b, amount) {
+            var ah = parseInt(a.replace(/#/g, ''), 16),
+                ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff,
+                bh = parseInt(b.replace(/#/g, ''), 16),
+                br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff,
+                rr = ar + amount * (br - ar),
+                rg = ag + amount * (bg - ag),
+                rb = ab + amount * (bb - ab);
+
+            return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);
+        }
+
+    </script>
+</body>
+
+</html>
